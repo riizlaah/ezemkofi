@@ -20,9 +20,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import nr.dev.ezemkofi.ui.theme.EzemkofiTheme
 import nr.dev.ezemkofi.ui.theme.poppins
 
@@ -49,6 +51,25 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(route = Route.HOME) {
                             HomeScreen(mod, controller)
+                        }
+                        composable(
+                            route = Route.SEARCH_FULL,
+                            arguments = listOf(navArgument("search") {
+                                type = NavType.StringType
+                                defaultValue = ""
+                            })
+                        ) { backStackEntry ->
+                            val searchStr = backStackEntry.arguments?.getString("search") ?: ""
+                            SearchScreen(mod, controller, searchStr)
+                        }
+                        composable(
+                            route = Route.COFFEE_DETAIL_FULL,
+                            arguments = listOf(navArgument("id") {
+                                type = NavType.IntType
+                            })
+                        ) { backStackEntry ->
+                            val id = backStackEntry.arguments?.getInt("id") ?: 1
+                            CoffeeDetailScreen(mod, controller, id)
                         }
                     }
                 }

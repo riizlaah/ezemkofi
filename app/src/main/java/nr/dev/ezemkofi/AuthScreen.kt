@@ -203,6 +203,7 @@ fun BorderedTextField(value: String, onValueChange: (String) -> Unit, placeholde
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
+        singleLine = true,
         modifier = Modifier.fillMaxWidth(),
         decorationBox = {tField ->
             Column(Modifier.fillMaxWidth().borderBottom().padding(4.dp)) {

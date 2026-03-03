@@ -47,6 +47,7 @@ data class Coffee(
     val id: Int,
     val categoryName: String,
     val name: String,
+    val description: String = "",
     val rating: Double,
     val price: Double,
     val imgPath: String
@@ -218,5 +219,21 @@ object HttpClient {
             ))
         }
         return coffees
+    }
+
+    suspend fun getCoffeeById(id: Int): Coffee? {
+        if(accessToken.isEmpty()) return null
+        val jsonStr = jsonReq(ADDRESS + "api/coffee/$id")
+        if(jsonStr.isEmpty()) return null
+        val obj = JSONObject(jsonStr)
+        return Coffee(
+            id = obj.getInt("id"),
+            name = obj.getString("name"),
+            description = obj.getString("description"),
+            categoryName = obj.getString("category"),
+            rating = obj.getDouble("rating"),
+            price = obj.getDouble("price"),
+            imgPath = obj.getString("imagePath"),
+        )
     }
 }
