@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.content.edit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -34,15 +35,11 @@ data class HttpResponse(
 )
 
 data class User(
-    val id: Int,
-    val fullname: String,
-    val username: String,
-    val email: String
+    val id: Int, val fullname: String, val username: String, val email: String
 )
 
 data class Category(
-    val id: Int,
-    val name: String
+    val id: Int, val name: String
 )
 
 data class Coffee(
@@ -64,8 +61,7 @@ data class CartItem(
 )
 
 data class CoffeeSize(
-    val name: String,
-    val scale: Float
+    val name: String, val scale: Double
 )
 
 object HttpClient {
@@ -113,16 +109,12 @@ object HttpClient {
                 null
             }
             HttpResponse(
-                code,
-                body,
-                bytes,
-                headers = conn.headerFields
+                code, body, bytes, headers = conn.headerFields
             )
         } catch (e: Exception) {
             e.printStackTrace()
             HttpResponse(
-                code = -1,
-                errors = e.message ?: "Network Error"
+                code = -1, errors = e.message ?: "Network Error"
             )
         } finally {
             conn.disconnect()
@@ -170,10 +162,7 @@ object HttpClient {
     }
 
     suspend fun register(
-        username: String,
-        password: String,
-        fullname: String,
-        email: String
+        username: String, password: String, fullname: String, email: String
     ): Boolean {
         val body =
             """{"username": "$username", "fullname": "$fullname", "email": "$email", "password": "$password"}"""
@@ -284,37 +273,68 @@ object HttpClient {
                 carts.indexOfFirst { it.coffeeId == cart.coffeeId && it.coffeeSize.name == cart.coffeeSize.name }
             val qty = carts[idx].qty + cart.qty
             carts[idx] = carts[idx].copy(
-                qty = qty,
-                price = carts[idx].coffee.price * qty * carts[idx].coffeeSize.scale
+                qty = qty, price = carts[idx].coffee.price * qty * carts[idx].coffeeSize.scale
             )
         } else {
             carts.add(cart)
         }
-
+        saveCarts()
     }
 
     fun addCartItemQty(coffeeId: Int, sizeName: String, qtyAdd: Int) {
         val idx = carts.indexOfFirst { it.coffeeId == coffeeId && it.coffeeSize.name == sizeName }
         val qty = max(1, carts[idx].qty + qtyAdd)
         carts[idx] = carts[idx].copy(
-            qty = qty,
-            price = carts[idx].coffee.price * qty * carts[idx].coffeeSize.scale
+            qty = qty, price = carts[idx].coffee.price * qty * carts[idx].coffeeSize.scale
         )
+        saveCarts()
     }
 
     fun delCartItem(coffeeId: Int, sizeName: String) {
         carts.removeIf { it.coffeeId == coffeeId && it.coffeeSize.name == sizeName }
+        saveCarts()
     }
 
-//    fun saveCarts() {
-//        var body = """["""
-//        carts.forEach { item ->
-//            body += """{"coffeeId": ${item.coffeeId}}"""
-//        }
-//        sharedPreferences?.edit {
-//            putString("carts", )
-//        }
-//    }
+    fun saveCarts() {
+        var body = "["
+        carts.forEach { item ->
+            body += """{"coffeeId": ${item.coffeeId}, "coffeeSize": {"name": "${item.coffeeSize.name}", "scale": ${item.coffeeSize.scale}}, "coffee": {"id": ${item.coffeeId}, "name": "${item.coffee.name}", "categoryName": "${item.coffee.categoryName}", "rating": ${item.coffee.rating}, "price": ${item.coffee.price}, "imgPath": "${item.coffee.imgPath}", "description": "${item.coffee.description}"}, "qty": ${item.qty}, "price": ${item.price}},"""
+        }
+        body = body.trim(',') + "]"
+        sharedPreferences?.edit {
+            putString("carts", body)
+        }
+    }
+
+    fun loadCarts() {
+        sharedPreferences?.let {
+            val str = it.getString("carts", "")
+            if(str.isNullOrEmpty()) return
+            val arr = JSONArray(str)
+            for(i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                val coffObj = obj.getJSONObject("coffee")
+                val sizeObj = obj.getJSONObject("coffeeSize")
+                val coffee = Coffee(
+                    id = coffObj.getInt("id"),
+                    name = coffObj.getString("name"),
+                    description = coffObj.getString("description"),
+                    categoryName = coffObj.getString("categoryName"),
+                    rating = coffObj.getDouble("rating"),
+                    price = coffObj.getDouble("price"),
+                    imgPath = coffObj.getString("imgPath")
+                )
+                val size = CoffeeSize(sizeObj.getString("name"), sizeObj.getDouble("scale"))
+                carts.add(CartItem(
+                    coffeeId = coffee.id,
+                    coffee = coffee,
+                    coffeeSize = size,
+                    qty = obj.getInt("qty"),
+                    price = obj.getDouble("price"),
+                ))
+            }
+        }
+    }
 
     suspend fun checkout(): Boolean {
         var body = """["""

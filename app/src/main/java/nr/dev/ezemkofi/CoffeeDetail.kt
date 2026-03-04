@@ -53,11 +53,11 @@ import kotlin.math.sin
 fun CoffeeDetailScreen(modifier: Modifier, controller: NavHostController, coffeeId: Int) {
     var coffee by remember { mutableStateOf<Coffee?>(null) }
     var qty by remember { mutableIntStateOf(1) }
-    val options = listOf(CoffeeSize("S", 0.85f), CoffeeSize("M", 1f), CoffeeSize("L", 1.15f))
+    val options = listOf(CoffeeSize("S", 0.85), CoffeeSize("M", 1.0), CoffeeSize("L", 1.15))
     var selectedOpt by remember { mutableIntStateOf(1) }
     var targetRotation by remember { mutableFloatStateOf(0f) }
     val radius: Dp = 300.dp
-    val imgSize by animateDpAsState(radius * options[selectedOpt].scale, animationSpec = tween(500))
+    val imgSize by animateDpAsState(radius * options[selectedOpt].scale.toFloat(), animationSpec = tween(500))
     val imgRotation by animateFloatAsState(
         targetRotation,
         animationSpec = tween(500)
@@ -228,6 +228,7 @@ fun CoffeeDetailScreen(modifier: Modifier, controller: NavHostController, coffee
                     Button(
                         onClick = {
                             HttpClient.addToCart(CartItem(coffeeId = coffee!!.id, coffee = coffee!!, coffeeSize = options[selectedOpt], qty = qty))
+                            controller.navigate(Route.CART)
                         },
                         contentPadding = PaddingValues(16.dp),
                         modifier = Modifier.fillMaxWidth()

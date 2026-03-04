@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     LaunchedEffect(Unit) {
                         HttpClient.sharedPreferences = applicationContext.getSharedPreferences("Cart", MODE_PRIVATE)
+                        HttpClient.loadCarts()
                     }
                     val mod = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary).padding(innerPadding).background(Color.White)
                     val controller = rememberNavController()

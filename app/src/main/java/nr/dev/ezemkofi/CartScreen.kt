@@ -98,17 +98,21 @@ fun CartScreen(modifier: Modifier, controller: NavHostController) {
                     )
                     Spacer(Modifier.width(8.dp))
                     Column(Modifier.fillMaxWidth()) {
-                        TextP(
-                            item.coffee.name,
-                            weight = FontWeight.SemiBold,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        TextP(
-                            item.coffee.categoryName,
-                            color = Color.Gray,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                TextP(
+                                    item.coffee.name,
+                                    weight = FontWeight.SemiBold,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                TextP(
+                                    item.coffee.categoryName,
+                                    color = Color.Gray,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            Icon(painterResource(R.drawable.delete), tint = Color.Gray, modifier = Modifier.padding(6.dp).size(18.dp).clickable(onClick = { HttpClient.delCartItem(item.coffeeId, item.coffeeSize.name)}), contentDescription = "Delete")
+                        }
                         Spacer(Modifier.height(16.dp))
                         TextP(
                             "Size: ${item.coffeeSize.name}",
