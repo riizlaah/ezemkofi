@@ -1,9 +1,11 @@
 package nr.dev.ezemkofi
 
+import android.content.SharedPreferences
 import android.graphics.BitmapFactory
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.Dispatchers
@@ -13,7 +15,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
+import kotlin.math.max
 
 data class HttpRequest(
     val url: String,
@@ -53,12 +55,28 @@ data class Coffee(
     val imgPath: String
 )
 
+data class CartItem(
+    val coffeeId: Int,
+    val coffeeSize: CoffeeSize,
+    val coffee: Coffee,
+    val qty: Int,
+    val price: Double = coffee.price * qty * coffeeSize.scale
+)
+
+data class CoffeeSize(
+    val name: String,
+    val scale: Float
+)
+
 object HttpClient {
     const val ADDRESS = "http://10.0.2.2:5000/"
     var accessToken = ""
 
     var user by mutableStateOf<User?>(null)
 
+    var sharedPreferences: SharedPreferences? = null
+
+    val carts = mutableStateListOf<CartItem>()
 
     fun send(req: HttpRequest, getByte: Boolean = false): HttpResponse {
         val conn = URL(req.url).openConnection() as HttpURLConnection
@@ -115,7 +133,7 @@ object HttpClient {
         val res = withContext(Dispatchers.IO) {
             send(HttpRequest(url), true)
         }
-        return if(res.code == 200 && res.bytes != null) {
+        return if (res.code == 200 && res.bytes != null) {
             val bitmap = BitmapFactory.decodeByteArray(res.bytes, 0, res.bytes.size)
             bitmap.asImageBitmap()
         } else {
@@ -131,7 +149,7 @@ object HttpClient {
                     url,
                     method,
                     body = body.ifEmpty { null },
-                    headers = if(accessToken.isNotEmpty()) headers + mapOf("authorization" to "Bearer $accessToken") else headers
+                    headers = if (accessToken.isNotEmpty()) headers + mapOf("authorization" to "Bearer $accessToken") else headers
                 )
             )
         }
@@ -164,9 +182,9 @@ object HttpClient {
     }
 
     suspend fun getMyInfo() {
-        if(accessToken.isEmpty()) return
+        if (accessToken.isEmpty()) return
         val jsonStr = jsonReq(ADDRESS + "api/me")
-        if(jsonStr.isEmpty()) return
+        if (jsonStr.isEmpty()) return
         val obj = JSONObject(jsonStr)
         user = User(
             id = obj.getInt("id"),
@@ -177,54 +195,77 @@ object HttpClient {
     }
 
     suspend fun getCategories(): List<Category> {
-        if(accessToken.isEmpty()) return emptyList()
+        if (accessToken.isEmpty()) return emptyList()
         val jsonStr = jsonReq(ADDRESS + "api/coffee-category")
-        if(jsonStr.isEmpty()) return emptyList()
+        if (jsonStr.isEmpty()) return emptyList()
         val arr = JSONArray(jsonStr)
         val categories = mutableListOf<Category>()
-        for(i in 0 until arr.length()) {
+        for (i in 0 until arr.length()) {
             val obj = arr.getJSONObject(i)
             categories.add(Category(id = obj.getInt("id"), name = obj.getString("name")))
         }
         return categories
     }
 
-    suspend fun getCoffees(search: String =  "", categoryId: Int = -1): List<Coffee> {
-        if(accessToken.isEmpty()) return emptyList()
+    suspend fun getCoffees(search: String = "", categoryId: Int = -1): List<Coffee> {
+        if (accessToken.isEmpty()) return emptyList()
         var url = ADDRESS + "api/coffee"
-        if(search.trim().isNotEmpty()) {
-            var encodedStr = URLEncoder.encode(search, "UTF-8")
-            url += "?search=$search"
-            if(categoryId > 0) {
+        if (search.trim().isNotEmpty()) {
+            val encodedStr = URLEncoder.encode(search, "UTF-8")
+            url += "?search=$encodedStr"
+            if (categoryId > 0) {
                 url += "&coffeeCategoryID=$categoryId"
             }
         } else {
-            if(categoryId > 0) {
+            if (categoryId > 0) {
                 url += "?coffeeCategoryID=$categoryId"
             }
         }
         val jsonStr = jsonReq(url)
-        if(jsonStr.isEmpty()) return emptyList()
+        if (jsonStr.isEmpty()) return emptyList()
         val arr = JSONArray(jsonStr)
         val coffees = mutableListOf<Coffee>()
-        for(i in 0 until arr.length()) {
+        for (i in 0 until arr.length()) {
             val obj = arr.getJSONObject(i)
-            coffees.add(Coffee(
-                id = obj.getInt("id"),
-                name = obj.getString("name"),
-                categoryName = obj.getString("category"),
-                rating = obj.getDouble("rating"),
-                price = obj.getDouble("price"),
-                imgPath = obj.getString("imagePath"),
-            ))
+            coffees.add(
+                Coffee(
+                    id = obj.getInt("id"),
+                    name = obj.getString("name"),
+                    categoryName = obj.getString("category"),
+                    rating = obj.getDouble("rating"),
+                    price = obj.getDouble("price"),
+                    imgPath = obj.getString("imagePath"),
+                )
+            )
+        }
+        return coffees
+    }
+
+    suspend fun getTopCoffees(): List<Coffee> {
+        val jsonStr = jsonReq(ADDRESS + "api/coffee/top-picks")
+        if (jsonStr.isEmpty()) return emptyList()
+        val arr = JSONArray(jsonStr)
+        val coffees = mutableListOf<Coffee>()
+        for (i in 0 until arr.length()) {
+            val obj = arr.getJSONObject(i)
+            coffees.add(
+                Coffee(
+                    id = obj.getInt("id"),
+                    name = obj.getString("name"),
+                    categoryName = obj.getString("category"),
+                    rating = obj.getDouble("rating"),
+                    price = obj.getDouble("price"),
+                    imgPath = obj.getString("imagePath"),
+                )
+            )
         }
         return coffees
     }
 
     suspend fun getCoffeeById(id: Int): Coffee? {
-        if(accessToken.isEmpty()) return null
+        if (accessToken.isEmpty()) return null
         val jsonStr = jsonReq(ADDRESS + "api/coffee/$id")
-        if(jsonStr.isEmpty()) return null
+        if (jsonStr.isEmpty()) return null
         val obj = JSONObject(jsonStr)
         return Coffee(
             id = obj.getInt("id"),
@@ -235,5 +276,52 @@ object HttpClient {
             price = obj.getDouble("price"),
             imgPath = obj.getString("imagePath"),
         )
+    }
+
+    fun addToCart(cart: CartItem) {
+        if (carts.any { it.coffeeId == cart.coffeeId && it.coffeeSize.name == cart.coffeeSize.name }) {
+            val idx =
+                carts.indexOfFirst { it.coffeeId == cart.coffeeId && it.coffeeSize.name == cart.coffeeSize.name }
+            val qty = carts[idx].qty + cart.qty
+            carts[idx] = carts[idx].copy(
+                qty = qty,
+                price = carts[idx].coffee.price * qty * carts[idx].coffeeSize.scale
+            )
+        } else {
+            carts.add(cart)
+        }
+
+    }
+
+    fun addCartItemQty(coffeeId: Int, sizeName: String, qtyAdd: Int) {
+        val idx = carts.indexOfFirst { it.coffeeId == coffeeId && it.coffeeSize.name == sizeName }
+        val qty = max(1, carts[idx].qty + qtyAdd)
+        carts[idx] = carts[idx].copy(
+            qty = qty,
+            price = carts[idx].coffee.price * qty * carts[idx].coffeeSize.scale
+        )
+    }
+
+    fun delCartItem(coffeeId: Int, sizeName: String) {
+        carts.removeIf { it.coffeeId == coffeeId && it.coffeeSize.name == sizeName }
+    }
+
+//    fun saveCarts() {
+//        var body = """["""
+//        carts.forEach { item ->
+//            body += """{"coffeeId": ${item.coffeeId}}"""
+//        }
+//        sharedPreferences?.edit {
+//            putString("carts", )
+//        }
+//    }
+
+    suspend fun checkout(): Boolean {
+        var body = """["""
+        carts.forEach { item ->
+            body += """{"coffeeId": ${item.coffeeId}, "size": "${item.coffeeSize.name}", "qty": ${item.qty}},"""
+        }
+        body = body.trim(',') + "]"
+        return jsonReq(ADDRESS + "api/checkout", body, "POST").isNotEmpty()
     }
 }

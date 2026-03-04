@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,9 +22,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,7 +49,8 @@ fun SearchScreen(modifier: Modifier, controller: NavHostController, searchStr: S
     Column(modifier) {
         Column(Modifier
             .fillMaxWidth()
-            .padding(24.dp)) {
+            .padding(24.dp)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     painterResource(R.drawable.chevron_left_regular_24),
@@ -92,16 +92,17 @@ fun SearchScreen(modifier: Modifier, controller: NavHostController, searchStr: S
                     }
                 )
             }
-            TextP("Search Result", weight = FontWeight.SemiBold)
+            Spacer(Modifier.height(12.dp))
+            TextP("Search Result", weight = FontWeight.SemiBold, size = MaterialTheme.typography.titleSmall.fontSize)
         }
         LazyColumn(Modifier
             .weight(1f)
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            .padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(results) { item ->
                 Row(
                     Modifier
-                        .padding(vertical = 24.dp, horizontal = 12.dp)
+                        .padding(12.dp)
                         .fillMaxWidth()
                         .clickable(onClick = { controller.navigate(Route.COFFEE_DETAIL + "/${item.id}") }),
                     verticalAlignment = Alignment.CenterVertically

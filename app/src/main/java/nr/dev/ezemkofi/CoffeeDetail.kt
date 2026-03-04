@@ -1,5 +1,8 @@
 package nr.dev.ezemkofi
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +29,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -49,9 +53,16 @@ import kotlin.math.sin
 fun CoffeeDetailScreen(modifier: Modifier, controller: NavHostController, coffeeId: Int) {
     var coffee by remember { mutableStateOf<Coffee?>(null) }
     var qty by remember { mutableIntStateOf(1) }
-    val options = mapOf("S" to 0.85f, "M" to 1f, "L" to 1.15f)
-    var selectedOpt by remember { mutableStateOf("M") }
-    val radius: Dp = 200.dp
+    val options = listOf(CoffeeSize("S", 0.85f), CoffeeSize("M", 1f), CoffeeSize("L", 1.15f))
+    var selectedOpt by remember { mutableIntStateOf(1) }
+    var targetRotation by remember { mutableFloatStateOf(0f) }
+    val radius: Dp = 300.dp
+    val imgSize by animateDpAsState(radius * options[selectedOpt].scale, animationSpec = tween(500))
+    val imgRotation by animateFloatAsState(
+        targetRotation,
+        animationSpec = tween(500)
+    )
+
 
     LaunchedEffect(Unit) {
         if (coffee == null) coffee = HttpClient.getCoffeeById(coffeeId)
@@ -104,44 +115,50 @@ fun CoffeeDetailScreen(modifier: Modifier, controller: NavHostController, coffee
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .height(radius * 2.5f)
+                            .height(radius * 1.75f)
                             .padding(6.dp)
                     ) {
                         NetImage(
                             HttpClient.ADDRESS + "images/${coffee!!.imgPath}",
                             modifier = Modifier
                                 .align(Alignment.Center)
-                                .width(radius)
+                                .rotate(imgRotation)
+                                .size(imgSize)
                         )
                         Box(modifier = Modifier.align(Alignment.CenterEnd).size(40.dp).clip(CircleShape).background(Color(0xfff9853a))) {
                             TextP("${coffee!!.rating}", alignment = TextAlign.Center, color = Color.White, weight = FontWeight.Medium, modifier = Modifier.align(Alignment.Center))
                         }
-                        var i = 0
-                        options.forEach { (k, v) ->
+                        options.forEachIndexed { i, size ->
                             val angle = (230f + 80f * (i.toFloat() / (options.size - 1))).toDouble()
 
-                            val x = ((radius * 0.85f) * cos(Math.toRadians(angle)).toFloat())
-                            val y = -((radius * 0.85f) * sin(Math.toRadians(angle)).toFloat())
+                            val x = ((radius * 0.65f) * cos(Math.toRadians(angle)).toFloat())
+                            val y = -((radius * 0.65f) * sin(Math.toRadians(angle)).toFloat())
+                            val rot = 45f + (i * -45f)
 
-                            if (selectedOpt == k) {
+                            if (selectedOpt == i) {
                                 Button(
-                                    onClick = {selectedOpt = k},
+                                    onClick = {selectedOpt = i},
                                     modifier = Modifier
                                         .offset(x, y)
                                         .align(Alignment.Center)
-                                        .size(40.dp),
+                                        .size(40.dp)
+                                        .rotate(rot),
                                     contentPadding = PaddingValues(6.dp),
                                     shape = CircleShape
                                 ) {
-                                    TextP(k, color = Color.White)
+                                    TextP(size.name, color = Color.White)
                                 }
                             } else {
                                 OutlinedButton(
-                                    onClick = {selectedOpt = k},
+                                    onClick = {
+                                        selectedOpt = i
+                                        targetRotation += 360f
+                                    },
                                     modifier = Modifier
                                         .offset(x, y)
                                         .align(Alignment.Center)
-                                        .size(40.dp),
+                                        .size(40.dp)
+                                        .rotate(rot),
                                     contentPadding = PaddingValues(6.dp),
                                     shape = CircleShape,
                                     border = BorderStroke(
@@ -149,10 +166,9 @@ fun CoffeeDetailScreen(modifier: Modifier, controller: NavHostController, coffee
                                         MaterialTheme.colorScheme.primary,
                                     )
                                 ) {
-                                    TextP(k)
+                                    TextP(size.name, color = MaterialTheme.colorScheme.primary)
                                 }
                             }
-                            i += 1
                         }
                     }
                 }
@@ -177,13 +193,14 @@ fun CoffeeDetailScreen(modifier: Modifier, controller: NavHostController, coffee
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         TextP(
-                            "$${coffee!!.price}",
+                            "$%.2f".format(coffee!!.price * options[selectedOpt].scale),
                             weight = FontWeight.SemiBold,
                         )
                         Row(
                             Modifier
                                 .border(1.dp, Color.LightGray, CircleShape)
-                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 painterResource(R.drawable.minus_regular_24),
@@ -209,7 +226,9 @@ fun CoffeeDetailScreen(modifier: Modifier, controller: NavHostController, coffee
                         }
                     }
                     Button(
-                        onClick = {},
+                        onClick = {
+                            HttpClient.addToCart(CartItem(coffeeId = coffee!!.id, coffee = coffee!!, coffeeSize = options[selectedOpt], qty = qty))
+                        },
                         contentPadding = PaddingValues(16.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {

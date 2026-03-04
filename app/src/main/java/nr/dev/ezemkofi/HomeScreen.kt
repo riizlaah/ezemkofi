@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -44,7 +42,6 @@ import androidx.navigation.NavHostController
 
 @Composable
 fun HomeScreen(modifier: Modifier, controller: NavHostController) {
-    var search by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var categories by remember { mutableStateOf(listOf<Category>()) }
     var coffees by remember { mutableStateOf(listOf<Coffee>()) }
@@ -56,7 +53,7 @@ fun HomeScreen(modifier: Modifier, controller: NavHostController) {
             categories = HttpClient.getCategories()
             selectedCategory = categories[0]
             coffees = HttpClient.getCoffees()
-            topCoffees = coffees.sortedByDescending { it.rating }
+            topCoffees = HttpClient.getTopCoffees()
             categorizedCoffees = coffees.filter { it.categoryName == selectedCategory!!.name }
         }
     }
@@ -84,7 +81,7 @@ fun HomeScreen(modifier: Modifier, controller: NavHostController) {
                 painterResource(R.drawable.shopping_bag_regular_24),
                 contentDescription = "Cart",
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(24.dp)
                     .clickable(onClick = {
                         controller.navigate(Route.CART)
                     })
@@ -149,13 +146,13 @@ fun HomeScreen(modifier: Modifier, controller: NavHostController) {
                         Column(
                             Modifier
                                 .padding(horizontal = 24.dp)
-                                .drawBehind({
+                                .drawBehind {
                                     drawRoundRect(
                                         Color(0xff156545),
                                         topLeft = Offset(0f, size.height * 0.35f),
                                         cornerRadius = CornerRadius(16.dp.toPx())
                                     )
-                                })
+                                }
                                 .padding(16.dp)
                                 .clickable(onClick = {controller.navigate(Route.COFFEE_DETAIL + "/${item.id}")}),
                             horizontalAlignment = Alignment.CenterHorizontally

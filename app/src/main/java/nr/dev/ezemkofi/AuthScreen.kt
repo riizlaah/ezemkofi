@@ -10,13 +10,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.BasicSecureTextField
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -93,7 +91,7 @@ fun LoginScreen(modifier: Modifier, controller: NavHostController) {
                     contentPadding = PaddingValues(12.dp)
                 ) {
                     if(loading) {
-                        CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.dp)
+                        LoadingIndicator()
                         return@Button
                     }
                     TextP("LOGIN", color = Color.White, weight = FontWeight.Medium)
@@ -180,7 +178,7 @@ fun RegisterScreen(modifier: Modifier, controller: NavHostController) {
                     contentPadding = PaddingValues(12.dp)
                 ) {
                     if(loading) {
-                        CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.dp)
+                        LoadingIndicator()
                         return@Button
                     }
                     TextP("SIGN UP", color = Color.White, weight = FontWeight.Medium)
