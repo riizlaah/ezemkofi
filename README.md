@@ -1,6 +1,5 @@
 # Ezemkofi
-
-Waktu pengerjaan sekitar 9 jam
+Android App untuk mencari dan memesan kopi.
 
 ## Features
 
@@ -12,3 +11,11 @@ Waktu pengerjaan sekitar 9 jam
 - Using `SharedPreferences` to save Cart Items locally
 - Checkout coffees
 - Modern & interactive UI
+
+## Previews
+Waktu pengerjaan sekitar 9 jam
+
+<div>
+  <img src="previews/preview1.png" width="350">
+  <img src="previews/preview3.png" width="350">
+</div>
